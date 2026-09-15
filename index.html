@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>有一封信给你</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #2b1a3d 0%, #4a2c5e 45%, #6b3a5b 100%);
+    color: #4a3728;
+  }
+
+  /* ============ 场景一：信封 ============ */
+  #scene-envelope {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: opacity 0.8s;
+  }
+  #scene-envelope.hide { opacity: 0; pointer-events: none; }
+
+  .stars { position: absolute; inset: 0; pointer-events: none; }
+  .star {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: twinkle 3s infinite ease-in-out;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50% { opacity: 0.9; transform: scale(1.4); }
+  }
+
+  .envelope-wrap {
+    position: relative;
+    width: 260px;
+    height: 180px;
+    cursor: pointer;
+    animation: float 3.5s ease-in-out infinite;
+    perspective: 800px;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .envelope {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #f6e7d3, #efd9bd);
+    border-radius: 10px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+  }
+  /* 信封底部折角装饰 */
+  .envelope::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 55%;
+    background: linear-gradient(135deg, #f0dcc2, #e8d0ae);
+    clip-path: polygon(0 100%, 50% 20%, 100% 100%);
+    border-radius: 0 0 10px 10px;
+  }
+  /* 信封盖 */
+  .flap {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 62%;
+    background: linear-gradient(180deg, #f9edd9, #f0dcc2);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: top;
+    transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 5;
+    border-radius: 10px 10px 0 0;
+  }
+  .envelope-wrap.open .flap { transform: rotateX(180deg); z-index: 1; }
+
+  /* 火漆印章 */
+  .seal {
+    position: absolute;
+    left: 50%; top: 52%;
+    transform: translate(-50%, -50%);
+    width: 52px; height: 52px;
+    background: radial-gradient(circle at 35% 35%, #e0596e, #b23a52);
+    border-radius: 50%;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    transition: opacity 0.4s, transform 0.4s;
+    font-size: 24px;
+    color: #fff;
+  }
+  .envelope-wrap.open .seal { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+
+  .hint {
+    margin-top: 44px;
+    color: rgba(255, 240, 220, 0.9);
+    font-size: 15px;
+    letter-spacing: 6px;
+    animation: breath 2s ease-in-out infinite;
+  }
+  @keyframes breath {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+  }
+
+  .top-title {
+    position: absolute;
+    top: 8%;
+    width: 100%;
+    text-align: center;
+    color: rgba(255, 240, 220, 0.85);
+    font-size: 16px;
+    letter-spacing: 10px;
+  }
+
+  /* ============ 场景二：信纸 ============ */
+  #scene-letter {
+    position: fixed;
+    inset: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: linear-gradient(160deg, #fdf6e9, #f7ecd9);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.9s;
+  }
+  #scene-letter.show { opacity: 1; pointer-events: auto; }
+
+  .paper {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 52px 26px 120px;
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  }
+  .paper .salutation {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+  }
+  .paper p {
+    font-size: 16px;
+    line-height: 2.1;
+    margin-bottom: 18px;
+    text-align: justify;
+    letter-spacing: 0.5px;
+  }
+  .paper .signature {
+    text-align: right;
+    margin-top: 36px;
+    font-size: 17px;
+    line-height: 2;
+  }
+  .paper .date {
+    text-align: right;
+    font-size: 14px;
+    color: #9a8468;
+    margin-top: 8px;
+  }
+
+  /* 顶部渐隐遮罩 */
+  .fade-top {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 40px;
+    background: linear-gradient(#f7ecd9, transparent);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* 朗读按钮 */
+  #tts-btn {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 30px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #c05a6e, #9b3a58);
+    color: #fff;
+    font-size: 15px;
+    letter-spacing: 2px;
+    box-shadow: 0 8px 24px rgba(155, 58, 88, 0.45);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  #tts-btn:active { transform: translateX(-50%) scale(0.95); }
+  #tts-btn.playing {
+    background: linear-gradient(135deg, #8a8577, #6e6a5e);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  #tts-btn .icon { font-size: 18px; }
+  #tts-btn.playing .icon { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+  }
+</style>
+</head>
+<body>
+
+<!-- 场景一：信封 -->
+<div id="scene-envelope">
+  <div class="top-title">一 封 信</div>
+  <div class="stars" id="stars"></div>
+  <div class="envelope-wrap" id="envelope">
+    <div class="envelope"></div>
+    <div class="flap"></div>
+    <div class="seal">♥</div>
+  </div>
+  <div class="hint">轻 触 拆 开</div>
+</div>
+
+<!-- 场景二：信纸 -->
+<div id="scene-letter">
+  <div class="fade-top"></div>
+  <div class="paper">
+    <div class="salutation">亲爱的你：</div>
+    <p>见字如面。</p>
+    <p>这里是信的第一段，请把我替换成你真正想说的话。写的时候不用着急，想到什么就写什么，哪怕是那天路过看到的一朵云，或者突然想起的一句话。</p>
+    <p>这里是信的第二段。信会一直保存在这个页面上，任何时候想看都可以打开。如果觉得文字不够，也可以点下面的按钮，让手机把这封信读给你听。</p>
+    <p>祝你今天也开心。</p>
+    <div class="signature">想对你说话的人</div>
+    <div class="date">2026 年 9 月</div>
+  </div>
+  <button id="tts-btn"><span class="icon">▶</span><span class="text">朗读这封信</span></button>
+</div>
+
+<script>
+/* =====================================================
+ * 腾讯云 CloudBase PostgreSQL REST API 配置
+ * 环境 ID 已填好，无需改动（除非换环境）
+ * ===================================================== */
+var ENV_ID = "prizay-d5g0umw5133d1dbc";
+var API = "https://" + ENV_ID + ".api.tcloudbasegateway.com";
+
+var _tokenPromise = null;
+// 匿名登录拿AccessToken
+function getToken() {
+  if (!_tokenPromise) {
+    _tokenPromise = fetch(API + "/auth/v1/signin/anonymously", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.access_token) throw new Error("匿名登录失败");
+      return d.access_token;
+    }).catch(function (e) {
+      _tokenPromise = null;   // 失败后允许重试
+      throw e;
+    });
+  }
+  return _tokenPromise;
+}
+
+function fmtLocalTime() {
+  var d = new Date();
+  function p(n) { return n < 10 ? "0" + n : n; }
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate())
+    + " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+
+// 上报点击记录到 letter_log 表（失败静默，不影响看信）
+// event: open=拆信  tts_start=开始朗读  tts_end=朗读结束
+function logEvent(event) {
+  getToken().then(function (token) {
+    return fetch(API + "/v1/rdb/rest/letter_log", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify({
+        event: event,
+        client_time: fmtLocalTime(),     // 访客手机上的时间
+        ua: navigator.userAgent,         // 设备信息（可判断微信/苹果/安卓）
+        screen: window.innerWidth + "x" + window.innerHeight
+      })
+    });
+  }).catch(function () {});   // 出错不影响页面
+}
+
+/* ---------- 星空背景 ---------- */
+(function () {
+  var box = document.getElementById("stars");
+  for (var i = 0; i < 40; i++) {
+    var s = document.createElement("div");
+    s.className = "star";
+    s.style.left = Math.random() * 100 + "%";
+    s.style.top = Math.random() * 100 + "%";
+    s.style.animationDelay = Math.random() * 3 + "s";
+    s.style.width = s.style.height = (Math.random() * 2 + 1.5) + "px";
+    box.appendChild(s);
+  }
+})();
+
+/* ---------- 拆信 ---------- */
+var opened = false;
+document.getElementById("envelope").addEventListener("click", function () {
+  if (opened) return;
+  opened = true;
+  logEvent("open");
+  this.classList.add("open");
+  setTimeout(function () {
+    document.getElementById("scene-envelope").classList.add("hide");
+    document.getElementById("scene-letter").classList.add("show");
+  }, 750);
+});
+
+/* ---------- 语音朗读（浏览器自带 TTS） ---------- */
+var ttsBtn = document.getElementById("tts-btn");
+var speaking = false;
+
+ttsBtn.addEventListener("click", function () {
+  if (speaking) {
+    window.speechSynthesis.cancel();
+    stopTTS();
+    return;
+  }
+  var text = document.querySelector(".paper").innerText.trim();
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = "zh-CN";
+  u.rate = 0.9;
+  u.pitch = 1;
+  // 优先选择中文语音
+  var voices = window.speechSynthesis.getVoices();
+  for (var i = 0; i < voices.length; i++) {
+    if (voices[i].lang.indexOf("zh") === 0) { u.voice = voices[i]; break; }
+  }
+  u.onend = function () { stopTTS(); logEvent("tts_end"); };
+  u.onerror = function () { stopTTS(); };
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+  speaking = true;
+  ttsBtn.classList.add("playing");
+  ttsBtn.querySelector(".text").textContent = "停止朗读";
+  ttsBtn.querySelector(".icon").textContent = "■";
+  logEvent("tts_start");
+});
+
+function stopTTS() {
+  speaking = false;
+  ttsBtn.classList.remove("playing");
+  ttsBtn.querySelector(".text").textContent = "朗读这封信";
+  ttsBtn.querySelector(".icon").textContent = "▶";
+}
+
+// iOS 微信内需要用户触发后才能取到语音列表，先预热一次
+if (window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = function () {};
+}
+</script>
+</body>
+</html>

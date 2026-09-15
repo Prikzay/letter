@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信件访问记录 - 后台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f4f2ee;
+    color: #333;
+    padding: 20px 14px 60px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #999; margin-bottom: 20px; }
+
+  #login {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    text-align: center;
+  }
+  #login input {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  #login button, .refresh-btn {
+    padding: 11px 34px;
+    border: none;
+    border-radius: 8px;
+    background: #9b3a58;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .refresh-btn { background: #666; font-size: 13px; padding: 8px 20px; margin-bottom: 14px; }
+
+  .stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    flex: 1;
+    min-width: 100px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .stat .num { font-size: 26px; font-weight: bold; color: #9b3a58; }
+  .stat .label { font-size: 12px; color: #888; margin-top: 2px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    font-size: 13px;
+  }
+  th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0ece6; }
+  th { background: #faf7f2; font-weight: 600; color: #777; white-space: nowrap; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .tag-open { background: #c05a6e; }
+  .tag-tts_start { background: #4a8ac0; }
+  .tag-tts_end { background: #6aa84f; }
+  .device { color: #888; font-size: 12px; }
+  .time-sub { color: #aaa; font-size: 11px; }
+  #err { margin-top: 16px; color: #c0392b; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💌 信件访问记录</h1>
+  <div class="sub">谁在什么时候拆了信、什么时候点了朗读</div>
+
+  <div id="login">
+    <div style="margin-bottom:16px;color:#666;font-size:14px">请输入后台密码</div>
+    <input type="password" id="pwd" placeholder="密码">
+    <button id="btn-login">查看记录</button>
+    <div id="err"></div>
+  </div>
+
+  <div id="data" style="display:none">
+    <button class="refresh-btn" id="btn-refresh">↻ 刷新</button>
+    <div class="stats">
+      <div class="stat"><div class="num" id="n-open">-</div><div class="label">拆信次数</div></div>
+      <div class="stat"><div class="num" id="n-tts">-</div><div class="label">朗读次数</div></div>
+      <div class="stat"><div class="num" id="n-total">-</div><div class="label">总记录数</div></div>
+    </div>
+    <table>
+      <thead><tr><th>事件</th><th>访客时间</th><th>设备</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/* ======== 腾讯云 CloudBase PostgreSQL REST API 配置 ======== */
+var ENV_ID = "prizay-d5g0umw5133d1dbc";
+var API = "https://" + ENV_ID + ".api.tcloudbasegateway.com";
+/* 后台密码（只防君子，不是真正加密；想改就改这里） */
+var ADMIN_PASSWORD = "123456";
+
+var names = { open: "拆信", tts_start: "开始朗读", tts_end: "朗读结束" };
+
+/* ---------- 匿名登录拿 token ---------- */
+function getToken() {
+  return fetch(API + "/auth/v1/signin/anonymously", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}"
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    if (!d || !d.access_token) throw new Error("匿名登录失败");
+    return d.access_token;
+  });
+}
+
+/* ---------- 格式化 ---------- */
+function fmtTime(s) {
+  if (!s) return "-";
+  var d = new Date(s);
+  function p(n) { return n < 10 ? "0" + n : n; }
+  return (d.getMonth() + 1) + "-" + p(d.getDate()) + " "
+    + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+function device(ua) {
+  if (!ua) return "-";
+  var wechat = /MicroMessenger/i.test(ua) ? "微信 " : "";
+  var os = /iPhone|iPad|iPod/i.test(ua) ? "iOS" : /Android/i.test(ua) ? "安卓" : "电脑";
+  return wechat + os;
+}
+
+/* ---------- 加载数据 ---------- */
+function load() {
+  var tbody = document.getElementById("tbody");
+  var errBox = document.getElementById("err");
+  errBox.textContent = "";
+  tbody.innerHTML = '<tr><td colspan="3" style="color:#999">加载中…</td></tr>';
+  getToken().then(function (token) {
+    return fetch(API + "/v1/rdb/rest/letter_log?select=*&order=created_at.desc&limit=500", {
+      headers: { "Authorization": "Bearer " + token }
+    }).then(function (r) {
+      if (!r.ok) throw new Error("接口返回 " + r.status);
+      return r.json();
+    });
+  }).then(function (rows) {
+    rows = rows || [];
+    var nOpen = 0, nTts = 0, html = "";
+    for (var i = 0; i < rows.length; i++) {
+      var e = rows[i];
+      if (e.event === "open") nOpen++;
+      if (e.event === "tts_start") nTts++;
+      html += '<tr>'
+        + '<td><span class="tag tag-' + e.event + '">' + (names[e.event] || e.event) + '</span></td>'
+        + '<td>' + fmtTime(e.created_at)
+        + (e.client_time ? ' <span class="time-sub">(' + e.client_time + ')</span>' : '')
+        + '</td>'
+        + '<td class="device">' + device(e.ua) + '</td>'
+        + '</tr>';
+    }
+    if (!rows.length) html = '<tr><td colspan="3" style="color:#999">暂无记录</td></tr>';
+    tbody.innerHTML = html;
+    document.getElementById("n-open").textContent = nOpen;
+    document.getElementById("n-tts").textContent = nTts;
+    document.getElementById("n-total").textContent = rows.length;
+  }).catch(function (err) {
+    tbody.innerHTML = "";
+    errBox.textContent = "加载失败：" + (err.message || err)
+      + "（请检查：① SQL 编辑器里的建表代码是否已运行 ② 匿名登录是否已开启）";
+  });
+}
+
+document.getElementById("btn-login").addEventListener("click", tryLogin);
+document.getElementById("pwd").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") tryLogin();
+});
+function tryLogin() {
+  if (document.getElementById("pwd").value === ADMIN_PASSWORD) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("data").style.display = "block";
+    load();
+  } else {
+    document.getElementById("err").textContent = "密码不对哦";
+  }
+}
+document.getElementById("btn-refresh").addEventListener("click", load);
+</script>
+</body>
+</html>
