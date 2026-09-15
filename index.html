@@ -270,6 +270,130 @@
     min-width: 64px;
     text-align: right;
   }
+
+  /* ============ 宝藏悬浮按钮 + 耍赖卡弹窗 ============ */
+  #treasure-btn {
+    position: fixed;
+    right: 14px;
+    bottom: 104px;
+    z-index: 30;
+    width: 52px; height: 52px;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ffe9b8, #f5c86e);
+    box-shadow: 0 6px 18px rgba(90, 50, 60, 0.35), inset 0 -2px 6px rgba(180, 120, 30, 0.25);
+    font-size: 26px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: treasure-glow 2.4s ease-in-out infinite;
+    transition: transform 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #treasure-btn:active { transform: scale(0.9); }
+  #treasure-btn.used { filter: grayscale(0.8); opacity: 0.65; animation: none; }
+  @keyframes treasure-glow {
+    0%, 100% { box-shadow: 0 6px 18px rgba(90, 50, 60, 0.35), 0 0 0 0 rgba(245, 200, 110, 0.55); }
+    50% { box-shadow: 0 6px 18px rgba(90, 50, 60, 0.35), 0 0 0 12px rgba(245, 200, 110, 0); }
+  }
+  #treasure-tip {
+    position: fixed;
+    right: 74px;
+    bottom: 118px;
+    z-index: 30;
+    background: rgba(70, 40, 55, 0.92);
+    color: #ffe9c9;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+    white-space: nowrap;
+  }
+  #treasure-tip.show { opacity: 1; }
+
+  #card-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(30, 15, 30, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  #card-mask.show { opacity: 1; pointer-events: auto; }
+  #card-box {
+    width: min(78vw, 320px);
+    max-height: 86vh;
+    overflow-y: auto;
+    background: #fffaf2;
+    border-radius: 18px;
+    padding: 14px 14px 16px;
+    text-align: center;
+    transform: translateY(24px) scale(0.96);
+    transition: transform 0.3s;
+  }
+  #card-mask.show #card-box { transform: translateY(0) scale(1); }
+  #card-box img {
+    width: 100%;
+    border-radius: 12px;
+    display: block;
+    position: relative;
+  }
+  #card-box .card-question {
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+    font-size: 17px;
+    font-weight: bold;
+    color: #5a4632;
+    margin: 12px 0;
+  }
+  #card-box .card-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  #card-box .card-actions button {
+    flex: 1;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 0;
+    font-size: 15px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #card-use {
+    background: linear-gradient(135deg, #c05a6e, #9b3a58);
+    color: #fff;
+  }
+  #card-use:disabled { background: #cbbfae; }
+  #card-cancel {
+    background: #efe4d2;
+    color: #7a664e;
+  }
+  /* 已使用的大印章 */
+  #card-stamp {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%) rotate(-18deg) scale(3);
+    border: 4px solid #d24b5e;
+    color: #d24b5e;
+    font-size: 34px;
+    font-weight: bold;
+    letter-spacing: 8px;
+    padding: 6px 18px 6px 26px;
+    border-radius: 10px;
+    opacity: 0;
+    pointer-events: none;
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+    transition: transform 0.35s cubic-bezier(0.2, 1.6, 0.4, 1), opacity 0.3s;
+    background: rgba(255, 250, 242, 0.55);
+  }
+  #card-stamp.show { transform: translate(-50%, -50%) rotate(-18deg) scale(1); opacity: 0.95; }
 </style>
 </head>
 <body>
@@ -302,6 +426,21 @@
     <button id="tts-btn" aria-label="朗读"><span class="icon">▶</span></button>
     <div id="tts-track"><div id="tts-fill"></div><div id="tts-thumb"></div></div>
     <span id="tts-time">0:00 / --:--</span>
+  </div>
+  <button id="treasure-btn" aria-label="宝藏">💎</button>
+  <div id="treasure-tip">发现一张耍赖卡！</div>
+  <div id="card-mask">
+    <div id="card-box">
+      <div class="card-imgwrap" style="position:relative">
+        <img id="card-img" alt="耍赖卡">
+        <div id="card-stamp">已使用</div>
+      </div>
+      <div class="card-question" id="card-question">是否使用这张耍赖卡？</div>
+      <div class="card-actions">
+        <button id="card-use">使用</button>
+        <button id="card-cancel">再想想</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -495,6 +634,63 @@ ttsBtn.addEventListener("click", function () {
 
 // 打开页面就预取音频时长（只拉文件头，流量极小），总时长立刻可显示
 getAudio();
+
+/* ---------- 宝藏按钮 + 耍赖卡 ---------- */
+var treasureBtn = document.getElementById("treasure-btn");
+var treasureTip = document.getElementById("treasure-tip");
+var cardMask = document.getElementById("card-mask");
+var cardUse = document.getElementById("card-use");
+var cardCancel = document.getElementById("card-cancel");
+var cardQuestion = document.getElementById("card-question");
+var cardStamp = document.getElementById("card-stamp");
+var cardUsed = false;
+try { cardUsed = localStorage.getItem("card_used") === "1"; } catch (e) {}
+document.getElementById("card-img").src = PROXY + "/card";
+
+if (cardUsed) treasureBtn.classList.add("used");
+
+// 进入信纸页 2 秒后冒个气泡提示，8 秒后消失
+document.getElementById("envelope").addEventListener("click", function () {
+  setTimeout(function () {
+    treasureTip.classList.add("show");
+    setTimeout(function () { treasureTip.classList.remove("show"); }, 8000);
+  }, 2000);
+});
+
+treasureBtn.addEventListener("click", function () {
+  cardMask.classList.add("show");
+  if (cardUsed) {
+    cardStamp.classList.add("show");
+    cardQuestion.textContent = "这张耍赖卡已经用过啦";
+    cardUse.disabled = true;
+    cardUse.textContent = "已使用";
+  } else {
+    cardStamp.classList.remove("show");
+    cardQuestion.textContent = "是否使用这张耍赖卡？";
+    cardUse.disabled = false;
+    cardUse.textContent = "使用";
+  }
+});
+
+cardCancel.addEventListener("click", function () {
+  cardMask.classList.remove("show");
+});
+
+// 点遮罩空白处也能关闭
+cardMask.addEventListener("click", function (e) {
+  if (e.target === cardMask) cardMask.classList.remove("show");
+});
+
+cardUse.addEventListener("click", function () {
+  cardUsed = true;
+  try { localStorage.setItem("card_used", "1"); } catch (e) {}
+  treasureBtn.classList.add("used");
+  cardStamp.classList.add("show");
+  cardUse.disabled = true;
+  cardUse.textContent = "已使用";
+  cardQuestion.textContent = "耍赖成功！这一次，TA 允许你耍赖 ~";
+  logEvent("card_use");
+});
 
 // iOS 微信内需要用户触发后才能取到语音列表，先预热一次
 if (window.speechSynthesis) {
