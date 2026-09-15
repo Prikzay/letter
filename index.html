@@ -709,7 +709,7 @@ cardUse.addEventListener("click", function () {
     try { localStorage.setItem("card_used", "1"); } catch (e) {}
     treasureBtn.classList.add("used");
     refreshCardUI();   // 立即变灰+印章+按钮换成"撤销使用"
-    cardQuestion.textContent = "耍赖成功！这一次，TA 允许你耍赖 ~";
+    cardQuestion.textContent = "耍赖成功！这一次 TA 允许你耍赖~";
     logEvent("card_use");
   }
 });
