@@ -42,6 +42,11 @@
     cursor: pointer;
   }
   .refresh-btn { background: #666; font-size: 13px; padding: 8px 20px; margin-bottom: 14px; }
+  .danger-btn {
+    background: #fff; color: #c0392b; font-size: 13px; padding: 8px 20px;
+    margin-bottom: 14px; border: 1px solid #e0b4b4; border-radius: 8px; cursor: pointer;
+  }
+  .danger-btn:disabled { color: #bbb; border-color: #ddd; cursor: default; }
 
   .stats {
     display: flex;
@@ -105,6 +110,7 @@
 
   <div id="data" style="display:none">
     <button class="refresh-btn" id="btn-refresh">↻ 刷新</button>
+    <button class="danger-btn" id="btn-clear">清空记录</button>
     <div id="data-err" style="margin-bottom:14px;color:#c0392b;font-size:14px"></div>
     <div class="stats">
       <div class="stat"><div class="num" id="n-open">-</div><div class="label">拆信次数</div></div>
@@ -194,6 +200,34 @@ function tryLogin() {
   }
 }
 document.getElementById("btn-refresh").addEventListener("click", load);
+
+/* ---------- 清空记录 ---------- */
+document.getElementById("btn-clear").addEventListener("click", function () {
+  var btn = this;
+  if (!confirm("确定要清空全部记录吗？\n清空后无法恢复！")) return;
+  if (!confirm("再次确认：真的要清空所有拆信/朗读记录吗？")) return;
+  btn.disabled = true;
+  btn.textContent = "清空中…";
+  fetch(PROXY + "/clear", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: ADMIN_PASSWORD })
+  }).then(function (r) {
+    if (!r.ok) return r.text().then(function (t) { throw new Error("接口返回 " + r.status + (t ? "：" + t : "")); });
+    return r.json();
+  }).then(function (res) {
+    if (res && res.ok) {
+      load();
+    } else {
+      alert("清空失败：" + ((res && res.error) || "未知错误"));
+    }
+  }).catch(function (err) {
+    alert("清空失败：" + (err.message || err) + "，请稍后重试");
+  }).finally(function () {
+    btn.disabled = false;
+    btn.textContent = "清空记录";
+  });
+});
 </script>
 </body>
 </html>
