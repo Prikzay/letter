@@ -344,7 +344,9 @@
     border-radius: 12px;
     display: block;
     position: relative;
+    transition: filter 0.4s;
   }
+  #card-box.img-used img { filter: grayscale(1) opacity(0.75); }
   #card-box .card-question {
     font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
     font-size: 17px;
@@ -382,13 +384,14 @@
     transform: translate(-50%, -50%) rotate(-18deg) scale(3);
     border: 4px solid #d24b5e;
     color: #d24b5e;
-    font-size: 34px;
+    font-size: 28px;
     font-weight: bold;
-    letter-spacing: 8px;
-    padding: 6px 18px 6px 26px;
+    letter-spacing: 4px;
+    padding: 6px 14px 6px 18px;
     border-radius: 10px;
     opacity: 0;
     pointer-events: none;
+    white-space: nowrap;
     font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
     transition: transform 0.35s cubic-bezier(0.2, 1.6, 0.4, 1), opacity 0.3s;
     background: rgba(255, 250, 242, 0.55);
@@ -663,14 +666,17 @@ treasureBtn.addEventListener("click", function () {
 });
 
 /* 按当前状态刷新弹窗：没用过=使用/再想想；用过=撤销使用/关闭 */
+var cardBox = document.getElementById("card-box");
 function refreshCardUI() {
   if (cardUsed) {
+    cardBox.classList.add("img-used");
     cardStamp.classList.add("show");
     cardQuestion.textContent = "这张耍赖卡已经用过啦";
     cardUse.textContent = "撤销使用";
     cardUse.disabled = false;
     cardCancel.textContent = "关闭";
   } else {
+    cardBox.classList.remove("img-used");
     cardStamp.classList.remove("show");
     cardQuestion.textContent = "是否使用这张耍赖卡？";
     cardUse.textContent = "使用";
@@ -702,7 +708,7 @@ cardUse.addEventListener("click", function () {
     cardUsed = true;
     try { localStorage.setItem("card_used", "1"); } catch (e) {}
     treasureBtn.classList.add("used");
-    cardStamp.classList.add("show");
+    refreshCardUI();   // 立即变灰+印章+按钮换成"撤销使用"
     cardQuestion.textContent = "耍赖成功！这一次，TA 允许你耍赖 ~";
     logEvent("card_use");
   }
