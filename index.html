@@ -335,105 +335,35 @@ document.getElementById("envelope").addEventListener("click", function () {
   }, 750);
 });
 
-/* ---------- 语音朗读（微软神经网络语音 + 进度条） ---------- */
+/* ---------- 语音播放（亲自录制的音频 + 进度条） ---------- */
 var ttsBtn = document.getElementById("tts-btn");
 var ttsFill = document.getElementById("tts-fill");
 var ttsTrack = document.getElementById("tts-track");
 var speaking = false;
-
-/* 把信按标点切成小段：① 云端逐段合成 ② 进度精确推进 ③ 长文本更稳 */
-var chunks = [], chunkStarts = [], totalLen = 0;
-var curAudio = null, curChunk = -1, tickTimer = null, chunkTickStart = 0;
-var audioCache = {};   // 已合成段落缓存（objectURL），重听不用等
-
-function buildChunks(text) {
-  chunks = []; chunkStarts = [];
-  var start = 0;
-  while (start < text.length) {
-    var end = Math.min(start + 80, text.length);
-    var cut = -1;
-    for (var j = start; j < end; j++) {
-      if ("。！？；\n".indexOf(text[j]) >= 0 && j - start >= 30) cut = j + 1;
-    }
-    if (cut <= start) cut = end;
-    chunks.push(text.slice(start, cut));
-    chunkStarts.push(start);
-    start = cut;
-  }
-  totalLen = text.length;
-}
-
-function chunkIndexFor(charOffset) {
-  for (var i = chunks.length - 1; i >= 0; i--) {
-    if (chunkStarts[i] <= charOffset) return i;
-  }
-  return 0;
-}
+var audio = null;
+var tickTimer = null;
 
 function setFill(ratio) {
   ttsFill.style.width = (Math.max(0, Math.min(1, ratio)) * 100).toFixed(1) + "%";
 }
 
-function fetchChunkAudio(idx, cb) {
-  if (audioCache[idx]) return cb(audioCache[idx]);
-  fetch(PROXY + "/tts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: chunks[idx] })
-  }).then(function (r) {
-    if (!r.ok) throw new Error(r.status);
-    return r.blob();
-  }).then(function (b) {
-    audioCache[idx] = URL.createObjectURL(b);
-    cb(audioCache[idx]);
-  }).catch(function () { cb(null); });
-}
-
-/* 进度条推进：优先用音频真实时长，拿不到就按时间估算 */
-function tick() {
-  if (!speaking) return;
-  if (curAudio && curAudio.duration && isFinite(curAudio.duration) && curChunk >= 0) {
-    setFill((chunkStarts[curChunk] + curAudio.currentTime) / totalLen);
-  } else if (curChunk >= 0) {
-    var est = Math.max(1500, chunks[curChunk].length * 220);
-    var inChunk = Math.min(0.98, (Date.now() - chunkTickStart) / est);
-    setFill((chunkStarts[curChunk] + inChunk * chunks[curChunk].length) / totalLen);
-  }
-  tickTimer = setTimeout(tick, 200);
-}
-
-function playChunk(idx) {
-  if (!speaking) return;
-  curChunk = idx;
-  chunkTickStart = Date.now();
-  fetchChunkAudio(idx, function (url) {
-    if (!speaking || curChunk !== idx) return;
-    if (!url) { fallbackSpeak(chunkStarts[idx]); return; }
-    var a = new Audio(url);
-    curAudio = a;
-    a.onended = function () {
-      if (!speaking || curChunk !== idx) return;
-      if (idx + 1 < chunks.length) {
-        playChunk(idx + 1);
-        fetchChunkAudio(idx + 2, function () {});   // 预取下一段，衔接更顺
-      } else {
-        setFill(1);
-        stopTTS(true);
-        logEvent("tts_end");
-      }
-    };
-    a.onerror = function () {
-      if (speaking && curChunk === idx) fallbackSpeak(chunkStarts[idx]);
-    };
-    a.play().catch(function () {
-      if (speaking && curChunk === idx) fallbackSpeak(chunkStarts[idx]);
+function getAudio() {
+  if (!audio) {
+    audio = new Audio(PROXY + "/audio");
+    audio.preload = "metadata";
+    audio.addEventListener("ended", function () {
+      if (speaking) { setFill(1); stopTTS(true); logEvent("tts_end"); }
     });
-  });
+    audio.addEventListener("error", function () {
+      if (speaking) fallbackSpeak();
+    });
+  }
+  return audio;
 }
 
-/* 云端语音失败时，退回手机自带的朗读（声音机械但至少能听） */
-function fallbackSpeak(fromOffset) {
-  var text = document.querySelector(".paper").innerText.trim().slice(fromOffset);
+/* 云端音频放不了时，退回手机自带的朗读（保底能听） */
+function fallbackSpeak() {
+  var text = document.querySelector(".paper").innerText.trim();
   var u = new SpeechSynthesisUtterance(text);
   u.lang = "zh-CN";
   u.rate = 0.9;
@@ -449,15 +379,22 @@ function fallbackSpeak(fromOffset) {
   window.speechSynthesis.speak(u);
 }
 
-function startTTS(charOffset) {
-  var text = document.querySelector(".paper").innerText.trim();
-  buildChunks(text);
-  if (!chunks.length) return;
+/* 进度条推进（用录音的真实时长，精确） */
+function tick() {
+  if (!speaking) return;
+  if (audio && audio.duration && isFinite(audio.duration)) {
+    setFill(audio.currentTime / audio.duration);
+  }
+  tickTimer = setTimeout(tick, 200);
+}
+
+function startTTS() {
+  getAudio();
   speaking = true;
   ttsBtn.classList.add("playing");
   ttsBtn.querySelector(".icon").textContent = "■";
-  playChunk(chunkIndexFor(charOffset || 0));
-  fetchChunkAudio(chunkIndexFor(charOffset || 0) + 1, function () {});
+  var p = audio.play();
+  if (p && p.catch) p.catch(function () { fallbackSpeak(); });
   tick();
   logEvent("tts_start");
 }
@@ -465,7 +402,7 @@ function startTTS(charOffset) {
 function stopTTS(keepFill) {
   speaking = false;
   clearTimeout(tickTimer);
-  if (curAudio) { curAudio.pause(); curAudio = null; }
+  if (audio) audio.pause();
   window.speechSynthesis.cancel();
   ttsBtn.classList.remove("playing");
   ttsBtn.querySelector(".icon").textContent = "▶";
@@ -474,20 +411,19 @@ function stopTTS(keepFill) {
 
 ttsBtn.addEventListener("click", function () {
   if (speaking) stopTTS();
-  else startTTS(0);
+  else startTTS();
 });
 
-/* 点进度条任意位置：没在读就从那里开始读，正在读就跳到那里 */
+/* 点进度条任意位置：没在放就从那里开始放，正在放就跳到那里 */
 ttsTrack.addEventListener("click", function (e) {
   var rect = this.getBoundingClientRect();
   var ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-  var offset = Math.floor(ratio * totalLen);
-  if (speaking) {
-    if (curAudio) { curAudio.pause(); curAudio = null; }
-    window.speechSynthesis.cancel();
-    playChunk(chunkIndexFor(offset));
-  } else {
-    startTTS(offset);
+  var a = getAudio();
+  if (a.duration && isFinite(a.duration)) {
+    a.currentTime = ratio * a.duration;
+    if (!speaking) startTTS();
+  } else if (!speaking) {
+    startTTS();
   }
 });
 
