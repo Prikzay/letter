@@ -244,42 +244,10 @@
 
 <script>
 /* =====================================================
- * 腾讯云 CloudBase PostgreSQL REST API 配置
- * 环境 ID 已填好，无需改动（除非换环境）
+ * 记录上报配置：通过云函数 letter-proxy 中转（已解决跨域）
+ * 无需改动（除非换环境）
  * ===================================================== */
-var ENV_ID = "prizay-d5g0umrw5133d1dbc";
-var API = "https://" + ENV_ID + ".api.tcloudbasegateway.com";
-
-var _tokenPromise = null;
-// 访客设备ID（首次访问随机生成，存在手机里，之后不变）
-function getDeviceId() {
-  var d = localStorage.getItem("_did");
-  if (!d) {
-    d = "web-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    try { localStorage.setItem("_did", d); } catch (e) {}
-  }
-  return d;
-}
-// 匿名登录拿AccessToken
-function getToken() {
-  if (!_tokenPromise) {
-    _tokenPromise = fetch(API + "/auth/v1/signin/anonymously", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Device-ID": getDeviceId()
-      },
-      body: "{}"
-    }).then(function (r) { return r.json(); }).then(function (d) {
-      if (!d || !d.access_token) throw new Error("匿名登录失败");
-      return d.access_token;
-    }).catch(function (e) {
-      _tokenPromise = null;   // 失败后允许重试
-      throw e;
-    });
-  }
-  return _tokenPromise;
-}
+var PROXY = "https://prizay-d5g0umrw5133d1dbc.service.tcloudbase.com/letter-proxy";
 
 function fmtLocalTime() {
   var d = new Date();
@@ -288,24 +256,18 @@ function fmtLocalTime() {
     + " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
 }
 
-// 上报点击记录到 letter_log 表（失败静默，不影响看信）
+// 上报点击记录（失败静默，不影响看信）
 // event: open=拆信  tts_start=开始朗读  tts_end=朗读结束
 function logEvent(event) {
-  getToken().then(function (token) {
-    return fetch(API + "/v1/rdb/rest/letter_log", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + token,
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal"
-      },
-      body: JSON.stringify({
-        event: event,
-        client_time: fmtLocalTime(),     // 访客手机上的时间
-        ua: navigator.userAgent,         // 设备信息（可判断微信/苹果/安卓）
-        screen: window.innerWidth + "x" + window.innerHeight
-      })
-    });
+  fetch(PROXY + "/log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event: event,
+      client_time: fmtLocalTime(),     // 访客手机上的时间
+      ua: navigator.userAgent,         // 设备信息（可判断微信/苹果/安卓）
+      screen: window.innerWidth + "x" + window.innerHeight
+    })
   }).catch(function () {});   // 出错不影响页面
 }
 
