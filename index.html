@@ -179,8 +179,8 @@
     z-index: 10;
   }
 
-  /* 朗读按钮 */
-  #tts-btn {
+  /* 朗读播放器（按钮 + 进度条） */
+  #tts-player {
     position: fixed;
     bottom: 28px;
     left: 50%;
@@ -188,28 +188,62 @@
     z-index: 20;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 13px 30px;
-    border: none;
+    gap: 14px;
+    width: min(86vw, 380px);
+    padding: 9px 16px 9px 9px;
     border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 8px 24px rgba(90, 50, 60, 0.22);
+  }
+  #tts-btn {
+    flex: none;
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
     background: linear-gradient(135deg, #c05a6e, #9b3a58);
     color: #fff;
     font-size: 15px;
-    letter-spacing: 2px;
-    box-shadow: 0 8px 24px rgba(155, 58, 88, 0.45);
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+    -webkit-tap-highlight-color: transparent;
   }
-  #tts-btn:active { transform: translateX(-50%) scale(0.95); }
-  #tts-btn.playing {
-    background: linear-gradient(135deg, #8a8577, #6e6a5e);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-  }
-  #tts-btn .icon { font-size: 18px; }
+  #tts-btn:active { transform: scale(0.92); }
+  #tts-btn.playing { background: linear-gradient(135deg, #6e6a5e, #55524a); }
+  #tts-btn .icon { display: block; }
   #tts-btn.playing .icon { animation: pulse 1.2s ease-in-out infinite; }
   @keyframes pulse {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.25); }
+    50% { transform: scale(1.18); }
+  }
+  #tts-track {
+    flex: 1;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #tts-track::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 6px;
+    border-radius: 3px;
+    background: #eee2d2;
+  }
+  #tts-fill {
+    position: absolute;
+    left: 0;
+    height: 6px;
+    border-radius: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #c05a6e, #9b3a58);
+    transition: width 0.25s linear;
   }
 </style>
 </head>
@@ -231,15 +265,20 @@
 <div id="scene-letter">
   <div class="fade-top"></div>
   <div class="paper">
-    <div class="salutation">亲爱的你：</div>
-    <p>见字如面。</p>
-    <p>这里是信的第一段，请把我替换成你真正想说的话。写的时候不用着急，想到什么就写什么，哪怕是那天路过看到的一朵云，或者突然想起的一句话。</p>
-    <p>这里是信的第二段。信会一直保存在这个页面上，任何时候想看都可以打开。如果觉得文字不够，也可以点下面的按钮，让手机把这封信读给你听。</p>
-    <p>祝你今天也开心。</p>
-    <div class="signature">想对你说话的人</div>
-    <div class="date">2026 年 9 月</div>
+    <div class="salutation">TO  尾号0631女孩：：</div>
+    <p>很抱歉，本来想写一份手信，但不想带给你增加更多可以看到的负担了，请原谅我的不体面，可能知道你看到这段话之前，我都没办法好好平复情绪。</p>
+    <p>我不想说什么责备或者感谢，因为我可以理解到，在你的视角中我有太多太多的不确定因素和个人情绪，我不想把这些上升到我们是否适合这个层面，我始终觉得是自己做的不够好，没发给你安全感，没法陪在你身边，也没法迎合你的生活节奏，但这些都和感情没关系，其实在最后的这段日子里，我一直在烦恼，为什么我们每天晚上都在争吵，话题永远围绕“包容、体谅、陪伴”我能感觉到之后的几天你很大程度在证明我在你心里的重要程度，会很努力的退让，让我感觉到被照顾，是我太执着了，我太想把我们的关系变差双向努力，而忽视了你想要我多靠近你的心情。那天晚上你和我说你们要聊天的时候，其实我预料到了，你们会聊感情，站在你的视角里，我不够可靠，不够体贴，我们的感情是在消耗你的情感能力，他们作为你的朋友会觉得你不容易，心疼你，就像我的朋友也站我这边，觉得我被很强的控制欲所包裹一样，我很少会把我的事情说给他们听，因为他们认识的我和你认识的我不一样，我不喜欢听他们说你的不好，但心里还是会感到委屈，我一直在想，我能憋到什么时候，我介意你不找工作，我介意你不够包容我，我介意你找茬，我介意你内耗，我介意你遇到问题不说，我自己也和你越来越像，每次被你丢下，你都和我说“不用我继续了”看似放过我，其实是一把冰冷的匕首，透过你的身体，扎入我的心……我多想和你一起努力，你做作品集，我帮助你，找到一份不错的工作，我可以搬来北京，像你姐姐一样买个小房子；我多想收到你的道歉信，可以给自己壮大被你推开时的勇气；也多希望你可以不要放弃，无论是被拒绝的面试还是感情，我们都可以重现站起来继续走下去；我多想做那个可以给你兜底的男人，你去做你想做的事情，剩下的全交给我；我多想你可以锻炼一下，明年一起去五台山走完这段路……我太想看到我们的未来了……</p>
+    <p>我们才仅仅在一起了278天，我还想和你一起去海边，一起看下雪……但冷静下来，我貌似什么都做不到，你一直说我在常州找一个女孩子会很幸福，但我已经成为了不被幸福的那个人，你会说，再过一段时间，我会把你忘记，我会开始新的生活，哪怕是这样，我也会永远记住一个叫谢缘甜的拧巴女孩，每次想起都会酸鼻子。这是我被你丢下的第三次，我以为我早就做好了心理准备，我以为自己不会这么难过了，我还是会想起在一起的那天，我和你说要把接下来的人生托付给你的那种喜悦，可能你不想听我说对不起，但可能是最后一次说了，我不得不承认，我一直希望听到你成为更乐观更积极的人，我没有考虑到你原本内耗焦虑的情绪，一个劲的把你往前推，很抱歉让你产生了抵触情绪后一次次的妥协，我说你太会放过自己，却忘记了这段感情中你也一直在努力。</p>
+    <p>我真的还有好长好长的长篇大论想和你说，但我也知道你不喜欢看长篇大论，我说不上来现在是什么心情，可能长舒一口气，我们放过了彼此，也可能在期待是不是还会可能，我不想把我们的感情变成这样，说实话，我也不知道我写了这么说到底想说什么，就是感觉还有好多话没说完……
+    <p>请原谅我在任性一次，给小狗狗吃骨头吧，这个面霜是之前买了准备亲手送给你的，可能这个时候送也不太合适了，但是那个时候小潘的心意，也请你接下，我知道你容易干，特地买的滋润款，可能你会不喜欢，但它包含了那个时间中我对你的喜欢。</p>
+    <p>最后麻烦你一个事情，无论多久，如果…（你不用顾虑我怎么样，只考虑你自己）你准备开始新的生活了，不需要我了，请把小狮子寄回给我，如果你想保留的话，那就改掉你的VPN密码，让我无法使用，如果…是其他，哪怕是一个永远没有回复的答案那就寄回骨头或者什么都不要寄过来（不用顾虑是否拖着、对不起或者辜负我）</p>
+    <div class="signature">潘</div>
+    <div class="date">2026 年 9 月 16 日</div>
   </div>
-  <button id="tts-btn"><span class="icon">▶</span><span class="text">朗读这封信</span></button>
+  <div id="tts-player">
+    <button id="tts-btn" aria-label="朗读"><span class="icon">▶</span></button>
+    <div id="tts-track"><div id="tts-fill"></div></div>
+  </div>
 </div>
 
 <script>
@@ -298,43 +337,132 @@ document.getElementById("envelope").addEventListener("click", function () {
   }, 750);
 });
 
-/* ---------- 语音朗读（浏览器自带 TTS） ---------- */
+/* ---------- 语音朗读（播放器进度条版） ---------- */
 var ttsBtn = document.getElementById("tts-btn");
+var ttsFill = document.getElementById("tts-fill");
+var ttsTrack = document.getElementById("tts-track");
 var speaking = false;
 
-ttsBtn.addEventListener("click", function () {
-  if (speaking) {
-    window.speechSynthesis.cancel();
-    stopTTS();
-    return;
+/* 把信按标点切成小段，逐段朗读：
+   ① 避免部分手机长文本读一半就停  ② 进度可以按段精确推进 */
+var chunks = [], chunkStarts = [], totalLen = 0;
+var chunkIdx = 0, chunkSpeakStart = 0, chunkEstMs = 1;
+var tickTimer = null;
+
+function buildChunks(text) {
+  chunks = []; chunkStarts = [];
+  var start = 0;
+  while (start < text.length) {
+    var end = Math.min(start + 80, text.length);
+    var cut = -1;
+    for (var j = start; j < end; j++) {
+      if ("。！？；\n".indexOf(text[j]) >= 0 && j - start >= 30) cut = j + 1;
+    }
+    if (cut <= start) cut = end;
+    chunks.push(text.slice(start, cut));
+    chunkStarts.push(start);
+    start = cut;
   }
-  var text = document.querySelector(".paper").innerText.trim();
-  var u = new SpeechSynthesisUtterance(text);
-  u.lang = "zh-CN";
-  u.rate = 0.9;
-  u.pitch = 1;
-  // 优先选择中文语音
+  totalLen = text.length;
+}
+
+function chunkIndexFor(charOffset) {
+  for (var i = chunks.length - 1; i >= 0; i--) {
+    if (chunkStarts[i] <= charOffset) return i;
+  }
+  return 0;
+}
+
+function setFill(ratio) {
+  ttsFill.style.width = (Math.max(0, Math.min(1, ratio)) * 100).toFixed(1) + "%";
+}
+
+/* 按时间估算当前段落进度（部分手机没有逐字回调，就用估算兜底） */
+function tick() {
+  if (!speaking) return;
+  var inChunk = Math.min(0.98, (Date.now() - chunkSpeakStart) / chunkEstMs);
+  var done = chunkStarts[chunkIdx] + inChunk * chunks[chunkIdx].length;
+  setFill(done / totalLen);
+  tickTimer = setTimeout(tick, 200);
+}
+
+function pickVoice(u) {
   var voices = window.speechSynthesis.getVoices();
   for (var i = 0; i < voices.length; i++) {
     if (voices[i].lang.indexOf("zh") === 0) { u.voice = voices[i]; break; }
   }
-  u.onend = function () { stopTTS(); logEvent("tts_end"); };
-  u.onerror = function () { stopTTS(); };
+}
+
+function speakChunk(idx) {
+  chunkIdx = idx;
+  var text = chunks[idx];
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = "zh-CN";
+  u.rate = 0.9;
+  u.pitch = 1;
+  pickVoice(u);
+  u.onboundary = function (e) {
+    if (speaking && idx === chunkIdx && e.charIndex != null) {
+      setFill((chunkStarts[idx] + e.charIndex) / totalLen);
+    }
+  };
+  u.onend = function () {
+    if (!speaking || idx !== chunkIdx) return;
+    if (idx + 1 < chunks.length) {
+      speakChunk(idx + 1);
+    } else {
+      setFill(1);
+      stopTTS(true);
+      logEvent("tts_end");
+    }
+  };
+  u.onerror = function () {
+    if (speaking && idx === chunkIdx) stopTTS();
+  };
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(u);
+  chunkSpeakStart = Date.now();
+  chunkEstMs = Math.max(800, text.length * 200 / 0.9);
+}
+
+function startTTS(charOffset) {
+  var text = document.querySelector(".paper").innerText.trim();
+  buildChunks(text);
+  if (!chunks.length) return;
   speaking = true;
   ttsBtn.classList.add("playing");
-  ttsBtn.querySelector(".text").textContent = "停止朗读";
   ttsBtn.querySelector(".icon").textContent = "■";
+  speakChunk(chunkIndexFor(charOffset || 0));
+  tick();
   logEvent("tts_start");
+}
+
+function stopTTS(keepFill) {
+  speaking = false;
+  clearTimeout(tickTimer);
+  window.speechSynthesis.cancel();
+  ttsBtn.classList.remove("playing");
+  ttsBtn.querySelector(".icon").textContent = "▶";
+  if (!keepFill) setFill(0);
+}
+
+ttsBtn.addEventListener("click", function () {
+  if (speaking) stopTTS();
+  else startTTS(0);
 });
 
-function stopTTS() {
-  speaking = false;
-  ttsBtn.classList.remove("playing");
-  ttsBtn.querySelector(".text").textContent = "朗读这封信";
-  ttsBtn.querySelector(".icon").textContent = "▶";
-}
+/* 点进度条任意位置：没在读就从那里开始读，正在读就跳到那里 */
+ttsTrack.addEventListener("click", function (e) {
+  var rect = this.getBoundingClientRect();
+  var ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+  var offset = Math.floor(ratio * totalLen);
+  if (speaking) {
+    speakChunk(chunkIndexFor(offset));
+    tick();
+  } else {
+    startTTS(offset);
+  }
+});
 
 // iOS 微信内需要用户触发后才能取到语音列表，先预热一次
 if (window.speechSynthesis) {
