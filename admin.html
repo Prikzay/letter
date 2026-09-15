@@ -116,7 +116,7 @@
 
 <script>
 /* ======== 腾讯云 CloudBase PostgreSQL REST API 配置 ======== */
-var ENV_ID = "prizay-d5g0umw5133d1dbc";
+var ENV_ID = "prizay-d5g0umrw5133d1dbc";
 var API = "https://" + ENV_ID + ".api.tcloudbasegateway.com";
 /* 后台密码（只防君子，不是真正加密；想改就改这里） */
 var ADMIN_PASSWORD = "123456";
@@ -127,7 +127,10 @@ var names = { open: "拆信", tts_start: "开始朗读", tts_end: "朗读结束"
 function getToken() {
   return fetch(API + "/auth/v1/signin/anonymously", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Device-ID": "letter-admin"
+    },
     body: "{}"
   }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d || !d.access_token) throw new Error("匿名登录失败");
