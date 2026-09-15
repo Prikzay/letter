@@ -659,20 +659,28 @@ document.getElementById("envelope").addEventListener("click", function () {
 
 treasureBtn.addEventListener("click", function () {
   cardMask.classList.add("show");
+  refreshCardUI();
+});
+
+/* 按当前状态刷新弹窗：没用过=使用/再想想；用过=撤销使用/关闭 */
+function refreshCardUI() {
   if (cardUsed) {
     cardStamp.classList.add("show");
     cardQuestion.textContent = "这张耍赖卡已经用过啦";
-    cardUse.disabled = true;
-    cardUse.textContent = "已使用";
+    cardUse.textContent = "撤销使用";
+    cardUse.disabled = false;
+    cardCancel.textContent = "关闭";
   } else {
     cardStamp.classList.remove("show");
     cardQuestion.textContent = "是否使用这张耍赖卡？";
-    cardUse.disabled = false;
     cardUse.textContent = "使用";
+    cardUse.disabled = false;
+    cardCancel.textContent = "再想想";
   }
-});
+}
 
 cardCancel.addEventListener("click", function () {
+  if (!cardUsed) logEvent("card_think");   // 再想想也记录
   cardMask.classList.remove("show");
 });
 
@@ -682,14 +690,22 @@ cardMask.addEventListener("click", function (e) {
 });
 
 cardUse.addEventListener("click", function () {
-  cardUsed = true;
-  try { localStorage.setItem("card_used", "1"); } catch (e) {}
-  treasureBtn.classList.add("used");
-  cardStamp.classList.add("show");
-  cardUse.disabled = true;
-  cardUse.textContent = "已使用";
-  cardQuestion.textContent = "耍赖成功！这一次，TA 允许你耍赖 ~";
-  logEvent("card_use");
+  if (cardUsed) {
+    /* 撤销使用：恢复成可用状态 */
+    cardUsed = false;
+    try { localStorage.removeItem("card_used"); } catch (e) {}
+    treasureBtn.classList.remove("used");
+    refreshCardUI();
+    logEvent("card_undo");
+  } else {
+    /* 使用 */
+    cardUsed = true;
+    try { localStorage.setItem("card_used", "1"); } catch (e) {}
+    treasureBtn.classList.add("used");
+    cardStamp.classList.add("show");
+    cardQuestion.textContent = "耍赖成功！这一次，TA 允许你耍赖 ~";
+    logEvent("card_use");
+  }
 });
 
 // iOS 微信内需要用户触发后才能取到语音列表，先预热一次

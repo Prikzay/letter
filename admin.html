@@ -84,6 +84,8 @@
   .tag-tts_start { background: #4a8ac0; }
   .tag-tts_end { background: #6aa84f; }
   .tag-card_use { background: #d69e2e; }
+  .tag-card_undo { background: #4a8ac0; }
+  .tag-card_think { background: #9aa0a6; }
   .device { color: #888; font-size: 12px; }
   .time-sub { color: #aaa; font-size: 11px; }
   #err { margin-top: 16px; color: #c0392b; font-size: 14px; }
@@ -107,7 +109,7 @@
     <div class="stats">
       <div class="stat"><div class="num" id="n-open">-</div><div class="label">拆信次数</div></div>
       <div class="stat"><div class="num" id="n-tts">-</div><div class="label">朗读次数</div></div>
-      <div class="stat"><div class="num" id="n-card">-</div><div class="label">耍赖卡</div></div>
+      <div class="stat"><div class="num" id="n-card">-</div><div class="label">耍赖卡(净用/总用)</div></div>
       <div class="stat"><div class="num" id="n-total">-</div><div class="label">总记录数</div></div>
     </div>
     <table>
@@ -123,7 +125,7 @@ var PROXY = "https://prizay-d5g0umrw5133d1dbc.service.tcloudbase.com/letter-prox
 /* 后台密码（只防君子，不是真正加密；想改就改这里） */
 var ADMIN_PASSWORD = "123456";
 
-var names = { open: "拆信", tts_start: "开始朗读", tts_end: "朗读结束", card_use: "耍赖卡" };
+var names = { open: "拆信", tts_start: "开始朗读", tts_end: "朗读结束", card_use: "耍赖卡", card_undo: "撤销耍赖", card_think: "再想想" };
 
 /* ---------- 格式化 ---------- */
 function fmtTime(s) {
@@ -151,12 +153,13 @@ function load() {
     return r.json();
   }).then(function (rows) {
     rows = rows || [];
-    var nOpen = 0, nTts = 0, nCard = 0, html = "";
+    var nOpen = 0, nTts = 0, nCard = 0, nUndo = 0, html = "";
     for (var i = 0; i < rows.length; i++) {
       var e = rows[i];
       if (e.event === "open") nOpen++;
       if (e.event === "tts_start") nTts++;
       if (e.event === "card_use") nCard++;
+      if (e.event === "card_undo") nUndo++;
       html += '<tr>'
         + '<td><span class="tag tag-' + e.event + '">' + (names[e.event] || e.event) + '</span></td>'
         + '<td>' + fmtTime(e.created_at)
@@ -169,7 +172,7 @@ function load() {
     tbody.innerHTML = html;
     document.getElementById("n-open").textContent = nOpen;
     document.getElementById("n-tts").textContent = nTts;
-    document.getElementById("n-card").textContent = nCard;
+    document.getElementById("n-card").textContent = (nCard - nUndo) + "/" + nCard;
     document.getElementById("n-total").textContent = rows.length;
   }).catch(function (err) {
     tbody.innerHTML = "";
