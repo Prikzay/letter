@@ -333,6 +333,7 @@
     width: min(78vw, 320px);
     max-height: 86vh;
     overflow-y: auto;
+    overscroll-behavior: contain;
     background: #fffaf2;
     border-radius: 18px;
     padding: 14px 14px 16px;
@@ -699,6 +700,12 @@ cardCancel.addEventListener("click", function () {
 cardMask.addEventListener("click", function (e) {
   if (e.target === cardMask) cardMask.classList.remove("show");
 });
+
+// 弹窗打开时禁止触摸滑动带动页面（只允许在卡片内容超长时上下滚）
+cardMask.addEventListener("touchmove", function (e) {
+  if (e.target.closest("#card-box") && cardBox.scrollHeight > cardBox.clientHeight) return;
+  e.preventDefault();
+}, { passive: false });
 
 cardUse.addEventListener("click", function () {
   if (cardUsed) {
