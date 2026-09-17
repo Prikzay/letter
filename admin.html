@@ -119,7 +119,7 @@
       <div class="stat"><div class="num" id="n-total">-</div><div class="label">总记录数</div></div>
     </div>
     <table>
-      <thead><tr><th>事件</th><th>访客时间</th><th>设备</th><th>IP</th></tr></thead>
+      <thead><tr><th>事件</th><th>访客时间</th><th>设备</th><th>IP 归属地</th></tr></thead>
       <tbody id="tbody"></tbody>
     </table>
   </div>
@@ -172,7 +172,7 @@ function load() {
         + (e.client_time ? ' <span class="time-sub">(' + e.client_time + ')</span>' : '')
         + '</td>'
         + '<td class="device">' + device(e.ua) + '</td>'
-        + '<td class="device">' + (e.ip || '-') + '</td>'
+        + '<td class="device">' + ((e.city ? e.city + ' · ' : '') + (e.ip || '-')) + '</td>'
         + '</tr>';
     }
     if (!rows.length) html = '<tr><td colspan="4" style="color:#999">暂无记录</td></tr>';
